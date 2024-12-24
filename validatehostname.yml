@@ -50,3 +50,10 @@
       set_fact:
         failed_validations: "{{ failed_validations + ['nslookup failed for ' ~ inventory_hostname ~ ' with error: ' ~ nslookup_result.stderr ] }}"
       when: nslookup_result.rc != 0
+          
+    - name: Print failed validations
+      debug:
+        msg: |
+          Failed validations for {{ inventory_hostname }}:
+          {{ failed_validations | join("\n") }}
+      when: failed_validations |length > 0
