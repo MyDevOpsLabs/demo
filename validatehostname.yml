@@ -25,7 +25,7 @@
       set_fact:
         failed_validations: "{{ failed_validations + ['The first 2 characters (business unit) on ' ~ inventory_hostname ~ 'does not comply with naming standards.'] }}"
       when: result.failed
-      
+
     - name: Validate that the 3rd and 4th characters of the server name
       assert:
         that:
@@ -39,3 +39,14 @@
       set_fact:
         failed_validations: "{{ failed_validations + ['The 3rd and 4th characters (state/country code) on ' ~ inventory_hostname ~ 'does not comply with naming standards.'] }}"
       when: result.failed
+
+    - name: Perform nslookup on the hostname
+      command: "nslookup {{ inventory_hostname }}.{{ domain_name }}"
+      register: nslookup_result
+      delegate_to: localhost
+      ignore_errors: yes
+
+    - name: Append nslookup failure to failed validations
+      set_fact:
+        failed_validations: "{{ failed_validations + ['nslookup failed for ' ~ inventory_hostname ~ ' with error: ' ~ nslookup_result.stderr ] }}"
+      when: nslookup_result.rc != 0
