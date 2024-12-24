@@ -1,0 +1,22 @@
+---
+- name: Validate hostname against naming standards without logging into the hosts
+  hosts: all
+  gather_facts: no
+  vars:
+    domain_name: "devsparks.com"
+    valid_business_units: ['mb', 'rh']
+    failed_validations: []
+
+  tasks:
+  - name: Initialize empty failed validations list fir each host
+    set_fat:
+     failed_validations: []
+
+  - name: Validate that the first 2 characters of the server name
+    assert:
+      that:
+       - "{{ inventory_hostname[:2]|lower in valid_business_units }}"
+      fail_msg: "The first 2 characters (business unit) on '{{ inventory_hostname }}' does not comply with naming standards!"
+      success_msg: "The first 2 characters (business unit) on '{{ inventory_hostname }}' comply with naming standards!"
+    ignore_errors: yes
+    register: result
