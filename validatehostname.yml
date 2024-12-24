@@ -5,17 +5,37 @@
    vars:
      domain_name: "devsparks.com"
      valid_business_units: ['mb', 'rh']
+     valid_country_codes: ['us', 'in', 'uk', 'ca', 'fr']
      failed_validations: []
    tasks:
-   - name: Initialize empty failed validations list for each host
-     set_fact:
-      failed_validations: []
+    - name: Initialize empty failed validations list for each host
+      set_fact:
+       failed_validations: []
 
-   - name: Validate that the first 2 characters of the server name
-     assert:
+    - name: Validate that the first 2 characters of the server name
+      assert:
         that:
          - "{{ inventory_hostname[:2]|lower in valid_business_units }}"
         fail_msg: "The first 2 characters (business unit) on '{{ inventory_hostname }}' does not comply with naming standards!"
-        success_msg: "The first 2 characters (business unit) on '{{ inventory_hostname }}' comply with naming standards!"
-     ignore_errors: yes
-     register: result
+        success_msg: "The first 2 characters (business unit) on '{{ inventory_hostname }}' complies with naming standards!"
+      ignore_errors: yes
+      register: result
+    
+    - name: Append failed validation message for business unit
+      set_fact:
+        failed_validations: "{{ failed_validations + ['The first 2 characters (business unit) on ' ~ inventory_hostname ~ 'does not comply with naming standards.'] }}"
+      when: result.failed
+      
+    - name: Validate that the 3rd and 4th characters of the server name
+      assert:
+        that:
+          - "{{ inventory_hostname[2:4]|lower in valid_country_codes }}"
+        fail_msg: "The 3rd and 4th characters (state/country code) on '{{ inventory_hostname }}' does not comply with naming standards!"
+        success_msg: "The 3rd and 4th characters (state/country code) on '{{ inventory_hostname }}' complies with naming standards!"
+      ignore_errors: yes
+      register: result
+
+    - name: Append failed validation message for state/country
+      set_fact:
+        failed_validations: "{{ failed_validations + ['The 3rd and 4th characters (state/country code) on ' ~ inventory_hostname ~ 'does not comply with naming standards.'] }}"
+      when: result.failed
