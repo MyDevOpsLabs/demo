@@ -6,7 +6,9 @@
      domain_name: "devsparks.com"
      valid_business_units: ['mb', 'rh']
      valid_country_codes: ['us', 'in', 'uk', 'ca', 'fr']
-     failed_validations: []
+     failed_validations: [] #Global list to collect all failed validations
+     email_to: "mahikkrl@gmail.com"
+     email_subject: "Failed validation report for all hosts"
    tasks:
     - name: Initialize empty failed validations list for each host
       set_fact:
@@ -48,12 +50,30 @@
 
     - name: Append nslookup failure to failed validations
       set_fact:
-        failed_validations: "{{ failed_validations + ['nslookup failed for ' ~ inventory_hostname ~ ' with error: ' ~ nslookup_result.stderr ] }}"
+        failed_validations: "{{ failed_validations + ['nslookup failed for ' ~ inventory_hostname ~ ' with error: ' ~ nslookup_result.stderr] }}"
       when: nslookup_result.rc != 0
-          
+    
     - name: Print failed validations
       debug:
         msg: |
           Failed validations for {{ inventory_hostname }}:
           {{ failed_validations | join("\n") }}
       when: failed_validations |length > 0
+
+    - name: Send email with all failed validation results
+      mail:
+        host: "smtp.gmail.com"
+        port: 25
+        from: "mahikkrl@gmail.com"
+        to: "{{ email_to }}"
+        subject: "{{ email_subject  }}"
+        body: |
+          Failed validations for all hosts:
+          {% if failed_validations | length > 0 %}
+          {{ failed_validations | join("\n") }}
+          {% else %}
+          No validation errors found.
+          {% endif %}
+        when: failed_validations | length > 0
+        delegate_to: localhost
+        run_once: true
